@@ -50,5 +50,8 @@ It supports Employees, Managers, and Admins with features such as:
 ---
 
 # Project Architecture
-architecture.drawio.png
+[architecture.drawio.png
+](https://github.com/1Manya/AtomQuest_demo/blob/main/architecture.drawio.png)
 
+# demo live URL
+https://amazing-marshmallow-48fd3e.netlify.app/
