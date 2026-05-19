@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AtomQuest — Goal Tracking Portal</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --brand:#1A56DB;--brand-light:#EBF2FF;--brand-dark:#1040A0;
+    --success:#0A7C4B;--success-bg:#EDFAF4;
+    --warn:#B45309;--warn-bg:#FEF3C7;
+    --danger:#C0152B;--danger-bg:#FEE2E5;
+    --pending:#7C3AED;--pending-bg:#EDE9FE;
+    --text:#111827;--text-2:#4B5563;--text-3:#9CA3AF;
+    --bg:#F8FAFC;--surface:#FFFFFF;--border:#E5E7EB;
+    --radius:10px;--radius-lg:16px;
+    font-family:'DM Sans',sans-serif;
+  }
+  body{background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6}
+  button{font-family:inherit;cursor:pointer;border:none;outline:none}
+  input,select,textarea{font-family:inherit;font-size:14px}
+  h1{font-size:22px;font-weight:600}h2{font-size:18px;font-weight:600}h3{font-size:15px;font-weight:500}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;transition:all .15s}
+  .btn-primary{background:var(--brand);color:#fff}.btn-primary:hover{background:var(--brand-dark)}
+  .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-2)}.btn-ghost:hover{background:var(--bg)}
+  .btn-danger{background:var(--danger);color:#fff}.btn-danger:hover{opacity:.9}
+  .btn-success{background:var(--success);color:#fff}.btn-success:hover{opacity:.9}
+  .btn-sm{padding:5px 10px;font-size:12px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px}
+  .badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:500}
+  .badge-pending{background:var(--pending-bg);color:var(--pending)}
+  .badge-approved{background:var(--success-bg);color:var(--success)}
+  .badge-rejected{background:var(--danger-bg);color:var(--danger)}
+  .badge-draft{background:#F3F4F6;color:var(--text-2)}
+  .badge-ontrack{background:var(--success-bg);color:var(--success)}
+  .badge-notstarted{background:#F3F4F6;color:var(--text-2)}
+  .badge-completed{background:var(--brand-light);color:var(--brand)}
+  input[type=text],input[type=number],select,textarea{
+    width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;
+    background:var(--surface);color:var(--text);transition:border .15s
+  }
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand)}
+  label{font-size:12px;font-weight:500;color:var(--text-2);display:block;margin-bottom:4px}
+  .form-group{margin-bottom:14px}
+  .error{color:var(--danger);font-size:12px;margin-top:4px}
+  .tag{display:inline-block;background:var(--brand-light);color:var(--brand);padding:2px 8px;border-radius:6px;font-size:11px}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:12px;font-weight:500;color:var(--text-2);padding:8px 12px;border-bottom:1px solid var(--border)}
+  td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  .progress-bar{height:6px;background:#E5E7EB;border-radius:3px;overflow:hidden}
+  .progress-fill{height:100%;border-radius:3px;background:var(--brand);transition:width .3s}
+  .sidebar{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);padding:20px 0;flex-shrink:0}
+  .sidebar-logo{padding:0 20px 20px;font-weight:600;font-size:15px;border-bottom:1px solid var(--border);margin-bottom:12px}
+  .sidebar-logo span{color:var(--brand)}
+  .sidebar-section{font-size:10px;font-weight:600;letter-spacing:.08em;color:var(--text-3);padding:12px 20px 4px;text-transform:uppercase}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;color:var(--text-2);cursor:pointer;transition:all .15s;font-size:13px;font-weight:400;border-left:3px solid transparent}
+  .nav-item:hover{background:var(--bg);color:var(--text)}
+  .nav-item.active{background:var(--brand-light);color:var(--brand);border-left-color:var(--brand);font-weight:500}
+  .main{flex:1;padding:28px;overflow-y:auto;max-height:100vh}
+  .layout{display:flex;min-height:100vh}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
+  .modal{background:var(--surface);border-radius:var(--radius-lg);padding:24px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto}
+  .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+  .close-btn{background:var(--bg);border:none;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:16px;color:var(--text-2)}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:24px}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px}
+  .stat-val{font-size:24px;font-weight:600;color:var(--text)}
+  .stat-label{font-size:12px;color:var(--text-2);margin-top:2px}
+  .role-switch{display:flex;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:4px}
+  .role-btn{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:500;border:none;cursor:pointer;background:transparent;color:var(--text-2);transition:all .15s}
+  .role-btn.active{background:var(--surface);color:var(--brand);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+  .weight-bar{height:8px;border-radius:4px;background:#E5E7EB;margin-top:6px;overflow:hidden}
+  .weight-fill{height:100%;border-radius:4px;transition:width .3s}
+  .chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;border:1px solid}
+  .empty{text-align:center;padding:48px 20px;color:var(--text-3)}
+  .empty svg{margin-bottom:12px;opacity:.3}
+  @media(max-width:768px){.sidebar{display:none}.main{padding:16px}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useMemo}=React;
+
+// ── Seed Data ──
+const SEED={
+  users:[
+    {id:'emp1',name:'Priya Sharma',email:'priya@atomberg.com',role:'employee',managerId:'mgr1',dept:'Sales'},
+    {id:'emp2',name:'Rahul Gupta',email:'rahul@atomberg.com',role:'employee',managerId:'mgr1',dept:'Sales'},
+    {id:'emp3',name:'Anita Patel',email:'anita@atomberg.com',role:'employee',managerId:'mgr2',dept:'Operations'},
+    {id:'mgr1',name:'Sanjay Mehta',email:'sanjay@atomberg.com',role:'manager',dept:'Sales'},
+    {id:'mgr2',name:'Deepa Nair',email:'deepa@atomberg.com',role:'manager',dept:'Operations'},
+    {id:'adm1',name:'HR Admin',email:'admin@atomberg.com',role:'admin',dept:'HR'},
+  ],
+  goals:[
+    {id:'g1',empId:'emp1',title:'Achieve Sales Revenue Q-Target',thrustArea:'Revenue Growth',uom:'min',target:5000000,weightage:40,status:'approved',managerId:'mgr1',actuals:[],sharedFrom:null,description:'Hit monthly sales revenue of 50L'},
+    {id:'g2',empId:'emp1',title:'Reduce Customer TAT',thrustArea:'Customer Experience',uom:'max',target:2,weightage:30,status:'approved',managerId:'mgr1',actuals:[],sharedFrom:null,description:'Reduce avg response time to 2 days'},
+    {id:'g3',empId:'emp1',title:'Zero Safety Incidents',thrustArea:'Safety',uom:'zero',target:0,weightage:20,status:'approved',managerId:'mgr1',actuals:[],sharedFrom:null,description:'Maintain zero safety incidents'},
+    {id:'g4',empId:'emp1',title:'Q1 Product Launch',thrustArea:'Product',uom:'timeline',target:'2025-07-01',weightage:10,status:'pending',managerId:'mgr1',actuals:[],sharedFrom:null,description:'Launch new product line by deadline'},
+    {id:'g5',empId:'emp2',title:'Achieve Sales Revenue Q-Target',thrustArea:'Revenue Growth',uom:'min',target:4000000,weightage:50,status:'approved',managerId:'mgr1',actuals:[],sharedFrom:'g1',description:'Hit monthly sales revenue target'},
+    {id:'g6',empId:'emp2',title:'New Customer Acquisition',thrustArea:'Growth',uom:'min',target:20,weightage:30,status:'draft',managerId:'mgr1',actuals:[],sharedFrom:null,description:'Acquire 20 new enterprise customers'},
+    {id:'g7',empId:'emp2',title:'Training Completion',thrustArea:'Learning',uom:'timeline',target:'2025-06-30',weightage:20,status:'draft',managerId:'mgr1',actuals:[],sharedFrom:null,description:'Complete all mandatory trainings'},
+    {id:'g8',empId:'emp3',title:'Process Efficiency Improvement',thrustArea:'Operations',uom:'max',target:10,weightage:60,status:'approved',managerId:'mgr2',actuals:[],sharedFrom:null,description:'Reduce process cycle time by 10%'},
+    {id:'g9',empId:'emp3',title:'Zero Safety Incidents',thrustArea:'Safety',uom:'zero',target:0,weightage:40,status:'approved',managerId:'mgr2',actuals:[],sharedFrom:null,description:'Maintain zero incidents'},
+  ],
+  checkIns:[],
+  auditLog:[],
+};
+
+function loadState(){
+  try{
+    const s=localStorage.getItem('atomquest_v4');
+    return s?JSON.parse(s):SEED;
+  }catch{return SEED;}
+}
+function saveState(s){localStorage.setItem('atomquest_v4',JSON.stringify(s));}
+
+function computeScore(goal,actual){
+  if(actual===null||actual===undefined||actual==='')return null;
+  if(goal.uom==='zero')return Number(actual)===0?100:0;
+  if(goal.uom==='timeline'){
+    const comp=new Date(actual),tgt=new Date(goal.target);
+    return comp<=tgt?100:Math.max(0,100-Math.floor((comp-tgt)/(1000*60*60*24)));
+  }
+  if(goal.uom==='min')return Math.min(100,Math.round((Number(actual)/Number(goal.target))*100));
+  if(goal.uom==='max')return Number(actual)<=Number(goal.target)?100:Math.max(0,Math.round((Number(goal.target)/Number(actual))*100));
+  return null;
+}
+
+const THRUST_AREAS=['Revenue Growth','Customer Experience','Safety','Operations','Product','Learning & Development','Growth','People & Culture','Finance','Quality'];
+const QUARTERS=['Q1 (Jul)','Q2 (Oct)','Q3 (Jan)','Q4 (Apr)'];
+
+// ── App ──
+function App(){
+  const [state,setState]=useState(loadState);
+  const [currentUser,setCurrentUser]=useState(state.users[0]);
+  const [page,setPage]=useState('dashboard');
+  const [modal,setModal]=useState(null);
+
+  useEffect(()=>saveState(state),[state]);
+
+  const update=useCallback(fn=>setState(prev=>{const next={...prev};fn(next);return next;}),[]);
+
+  const addAudit=(st,msg,userId)=>{
+    st.auditLog=[{id:Date.now().toString(),ts:new Date().toISOString(),msg,userId},...(st.auditLog||[])];
+  };
+
+  function switchUser(uid){
+    const u=state.users.find(x=>x.id===uid);
+    setCurrentUser(u);setPage('dashboard');setModal(null);
+  }
+
+  const myGoals=state.goals.filter(g=>g.empId===currentUser.id);
+  const teamGoals=state.goals.filter(g=>{
+    const emp=state.users.find(u=>u.id===g.empId);
+    return emp&&emp.managerId===currentUser.id;
+  });
+
+  return(
+    <div className="layout">
+      <Sidebar user={currentUser} page={page} setPage={setPage} users={state.users} switchUser={switchUser}/>
+      <div className="main">
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:24}}>
+          <div>
+            <h1 style={{marginBottom:2}}>
+              {page==='dashboard'?'Dashboard':page==='goals'?'My Goals':page==='checkin'?'Check-ins':page==='team'?'Team Goals':page==='admin'?'Admin Panel':page==='reports'?'Reports':'Audit Log'}
+            </h1>
+            <p style={{color:'var(--text-2)',fontSize:13}}>Cycle: FY 2025-26 &nbsp;·&nbsp; {currentUser.name} &nbsp;·&nbsp; <span style={{textTransform:'capitalize'}}>{currentUser.role}</span></p>
+          </div>
+          <UserSwitcher users={state.users} current={currentUser} onChange={switchUser}/>
+        </div>
+
+        {page==='dashboard'&&<Dashboard state={state} user={currentUser} setPage={setPage} setModal={setModal}/>}
+        {page==='goals'&&<GoalsPage state={state} user={currentUser} update={update} addAudit={addAudit} setModal={setModal}/>}
+        {page==='checkin'&&<CheckInPage state={state} user={currentUser} update={update} addAudit={addAudit}/>}
+        {page==='team'&&(currentUser.role==='manager'||currentUser.role==='admin')&&<TeamPage state={state} user={currentUser} update={update} addAudit={addAudit}/>}
+        {page==='admin'&&currentUser.role==='admin'&&<AdminPage state={state} user={currentUser} update={update} addAudit={addAudit}/>}
+        {page==='reports'&&(currentUser.role==='manager'||currentUser.role==='admin')&&<ReportsPage state={state}/>}
+        {page==='audit'&&currentUser.role==='admin'&&<AuditPage state={state}/>}
+      </div>
+      {modal&&<ModalWrapper modal={modal} setModal={setModal} state={state} update={update} user={currentUser} addAudit={addAudit}/>}
+    </div>
+  );
+}
+
+function UserSwitcher({users,current,onChange}){
+  const roleColors={employee:'var(--brand)',manager:'var(--success)',admin:'var(--pending)'};
+  return(
+    <div style={{display:'flex',alignItems:'center',gap:8}}>
+      <span style={{fontSize:12,color:'var(--text-2)'}}>Switch role:</span>
+      <div className="role-switch">
+        {users.filter(u=>['emp1','mgr1','adm1'].includes(u.id)).map(u=>(
+          <button key={u.id} className={`role-btn${current.id===u.id?' active':''}`} onClick={()=>onChange(u.id)}>
+            {u.role==='employee'?'Employee':u.role==='manager'?'Manager':'Admin'}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Sidebar({user,page,setPage,users,switchUser}){
+  const empPages=[{id:'dashboard',label:'Dashboard',icon:'⊞'},{id:'goals',label:'My Goals',icon:'◎'},{id:'checkin',label:'Check-ins',icon:'✓'}];
+  const mgrPages=[{id:'team',label:'Team Goals',icon:'◈'},{id:'reports',label:'Reports',icon:'▤'}];
+  const admPages=[{id:'admin',label:'Admin Panel',icon:'⚙'},{id:'audit',label:'Audit Log',icon:'☰'}];
+  return(
+    <div className="sidebar">
+      <div className="sidebar-logo">⬡ <span>Atom</span>Quest</div>
+      <div className="sidebar-section">Main</div>
+      {empPages.map(p=><div key={p.id} className={`nav-item${page===p.id?' active':''}`} onClick={()=>setPage(p.id)}><span>{p.icon}</span>{p.label}</div>)}
+      {(user.role==='manager'||user.role==='admin')&&<>
+        <div className="sidebar-section">Manager</div>
+        {mgrPages.map(p=><div key={p.id} className={`nav-item${page===p.id?' active':''}`} onClick={()=>setPage(p.id)}><span>{p.icon}</span>{p.label}</div>)}
+      </>}
+      {user.role==='admin'&&<>
+        <div className="sidebar-section">Admin</div>
+        {admPages.map(p=><div key={p.id} className={`nav-item${page===p.id?' active':''}`} onClick={()=>setPage(p.id)}><span>{p.icon}</span>{p.label}</div>)}
+      </>}
+      <div style={{position:'absolute',bottom:20,padding:'0 20px',width:'100%'}}>
+        <div style={{fontSize:11,color:'var(--text-3)'}}>Logged in as</div>
+        <div style={{fontSize:12,fontWeight:500,marginTop:2}}>{user.name}</div>
+        <div style={{fontSize:11,color:'var(--text-3)',textTransform:'capitalize'}}>{user.role}</div>
+      </div>
+    </div>
+  );
+}
+
+// ── Dashboard ──
+function Dashboard({state,user,setPage,setModal}){
+  const myGoals=state.goals.filter(g=>g.empId===user.id);
+  const approved=myGoals.filter(g=>g.status==='approved').length;
+  const pending=myGoals.filter(g=>g.status==='pending').length;
+  const totalWeight=myGoals.reduce((s,g)=>s+Number(g.weightage),0);
+  const teamGoals=state.goals.filter(g=>{const e=state.users.find(u=>u.id===g.empId);return e&&e.managerId===user.id;});
+  const pendingApprovals=teamGoals.filter(g=>g.status==='pending').length;
+
+  return(
+    <div>
+      <div className="stat-grid">
+        <div className="stat-card"><div className="stat-val">{myGoals.length}<span style={{fontSize:14,color:'var(--text-3)'}}>/8</span></div><div className="stat-label">Total Goals</div></div>
+        <div className="stat-card"><div className="stat-val" style={{color:'var(--success)'}}>{approved}</div><div className="stat-label">Approved</div></div>
+        <div className="stat-card"><div className="stat-val" style={{color:'var(--pending)'}}>{pending}</div><div className="stat-label">Pending Approval</div></div>
+        <div className="stat-card"><div className="stat-val" style={{color:totalWeight===100?'var(--success)':totalWeight>100?'var(--danger)':'var(--warn)'}}>{totalWeight}%</div><div className="stat-label">Weightage Used</div></div>
+        {(user.role==='manager'||user.role==='admin')&&<div className="stat-card"><div className="stat-val" style={{color:'var(--warn)'}}>{pendingApprovals}</div><div className="stat-label">Awaiting Approval</div></div>}
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+        <div className="card">
+          <h3 style={{marginBottom:14}}>My Goals Overview</h3>
+          {myGoals.length===0?<div className="empty"><p>No goals yet. Start by adding goals.</p></div>:
+          myGoals.slice(0,5).map(g=>(
+            <div key={g.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontWeight:500,fontSize:13,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{g.title}</div>
+                <div style={{fontSize:11,color:'var(--text-3)'}}>{g.thrustArea} · {g.weightage}%</div>
+              </div>
+              <StatusBadge status={g.status}/>
+            </div>
+          ))}
+          <button className="btn btn-ghost btn-sm" style={{marginTop:12}} onClick={()=>setPage('goals')}>View all →</button>
+        </div>
+
+        <div className="card">
+          <h3 style={{marginBottom:14}}>Check-in Schedule</h3>
+          {QUARTERS.map((q,i)=>{
+            const qKey=`Q${i+1}`;
+            const done=state.checkIns.filter(c=>c.empId===user.id&&c.quarter===qKey).length>0;
+            return(
+              <div key={q} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
+                <div>
+                  <div style={{fontWeight:500,fontSize:13}}>{q}</div>
+                  <div style={{fontSize:11,color:'var(--text-3)'}}>{['May','July','October','January','March'][i+1]} window</div>
+                </div>
+                {done?<span className="badge badge-approved">Done</span>:<span className="badge badge-draft">Pending</span>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Goals Page ──
+function GoalsPage({state,user,update,addAudit,setModal}){
+  const [showAdd,setShowAdd]=useState(false);
+  const goals=state.goals.filter(g=>g.empId===user.id);
+  const totalWeight=goals.filter(g=>g.status!=='rejected').reduce((s,g)=>s+Number(g.weightage),0);
+
+  function deleteGoal(id){
+    if(!window.confirm('Delete this goal?'))return;
+    update(st=>{
+      const g=st.goals.find(x=>x.id===id);
+      if(g&&g.status==='approved'){alert('Cannot delete approved goals.');return;}
+      st.goals=st.goals.filter(x=>x.id!==id);
+      addAudit(st,`Goal deleted`,user.id);
+    });
+  }
+
+  function submitGoals(){
+    const draftGoals=goals.filter(g=>g.status==='draft');
+    if(draftGoals.length===0){alert('No draft goals to submit.');return;}
+    if(totalWeight!==100){alert(`Total weightage must be 100%. Current: ${totalWeight}%`);return;}
+    update(st=>{
+      st.goals=st.goals.map(g=>g.empId===user.id&&g.status==='draft'?{...g,status:'pending'}:g);
+      addAudit(st,'Goals submitted for approval',user.id);
+    });
+    alert('Goals submitted for manager approval!');
+  }
+
+  return(
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+        <div style={{display:'flex',gap:12,alignItems:'center'}}>
+          <div style={{fontSize:13}}>
+            <span style={{fontWeight:500}}>Total Weightage: </span>
+            <span style={{color:totalWeight===100?'var(--success)':totalWeight>100?'var(--danger)':'var(--warn)',fontWeight:600}}>{totalWeight}%</span>
+            <span style={{color:'var(--text-3)'}}> / 100%</span>
+          </div>
+          <div style={{fontSize:12,color:'var(--text-3)'}}>{goals.length}/8 goals</div>
+        </div>
+        <div style={{display:'flex',gap:8}}>
+          {goals.some(g=>g.status==='draft')&&<button className="btn btn-primary btn-sm" onClick={submitGoals}>Submit for Approval</button>}
+          <button className="btn btn-ghost btn-sm" onClick={()=>setShowAdd(true)} disabled={goals.length>=8}>+ Add Goal</button>
+        </div>
+      </div>
+
+      {goals.length===0?
+        <div className="card empty"><p style={{marginBottom:12}}>No goals yet.</p><button className="btn btn-primary" onClick={()=>setShowAdd(true)}>Add your first goal</button></div>:
+        <div style={{display:'flex',flexDirection:'column',gap:10}}>
+          {goals.map(g=><GoalCard key={g.id} goal={g} user={user} onDelete={deleteGoal} update={update} addAudit={addAudit} state={state}/>)}
+        </div>
+      }
+      {showAdd&&<AddGoalModal user={user} state={state} update={update} addAudit={addAudit} onClose={()=>setShowAdd(false)}/>}
+    </div>
+  );
+}
+
+function GoalCard({goal,user,onDelete,update,addAudit,state}){
+  const [editing,setEditing]=useState(false);
+  const canEdit=goal.status==='draft'||goal.status==='rejected';
+  const isShared=!!goal.sharedFrom;
+
+  return(
+    <div className="card" style={{position:'relative'}}>
+      {isShared&&<div style={{position:'absolute',top:12,right:12}}><span className="tag">Shared</span></div>}
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
+        <div style={{flex:1}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+            <h3>{goal.title}</h3>
+            <StatusBadge status={goal.status}/>
+          </div>
+          <div style={{fontSize:12,color:'var(--text-2)'}}>{goal.thrustArea}</div>
+        </div>
+        <div style={{fontWeight:600,fontSize:18,color:'var(--brand)',marginLeft:12}}>{goal.weightage}%</div>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,marginBottom:12,fontSize:12}}>
+        <div><span style={{color:'var(--text-3)'}}>UoM:</span> <span style={{fontWeight:500,textTransform:'capitalize'}}>{goal.uom==='min'?'Numeric (Higher=Better)':goal.uom==='max'?'Numeric (Lower=Better)':goal.uom==='zero'?'Zero-based':'Timeline'}</span></div>
+        <div><span style={{color:'var(--text-3)'}}>Target:</span> <span style={{fontWeight:500}}>{goal.uom==='timeline'?goal.target:Number(goal.target).toLocaleString()}</span></div>
+        <div><span style={{color:'var(--text-3)'}}>Status:</span> <span style={{fontWeight:500,textTransform:'capitalize'}}>{goal.status}</span></div>
+      </div>
+      {goal.description&&<div style={{fontSize:12,color:'var(--text-2)',marginBottom:10,padding:'8px 10px',background:'var(--bg)',borderRadius:6}}>{goal.description}</div>}
+      <div className="weight-bar"><div className="weight-fill" style={{width:`${Math.min(100,goal.weightage*2.5)}%`,background:goal.weightage>=10?'var(--brand)':'var(--danger)'}}/></div>
+      {canEdit&&!isShared&&(
+        <div style={{display:'flex',gap:6,marginTop:12}}>
+          <button className="btn btn-ghost btn-sm" onClick={()=>setEditing(true)}>Edit</button>
+          <button className="btn btn-danger btn-sm" onClick={()=>onDelete(goal.id)}>Delete</button>
+        </div>
+      )}
+      {editing&&<EditGoalModal goal={goal} user={user} update={update} addAudit={addAudit} onClose={()=>setEditing(false)} state={state}/>}
+    </div>
+  );
+}
+
+// ── Add Goal Modal ──
+function AddGoalModal({user,state,update,addAudit,onClose}){
+  const [form,setForm]=useState({title:'',thrustArea:THRUST_AREAS[0],uom:'min',target:'',weightage:'',description:''});
+  const [errors,setErrors]=useState({});
+  const goals=state.goals.filter(g=>g.empId===user.id&&g.status!=='rejected');
+
+  function validate(){
+    const e={};
+    if(!form.title.trim())e.title='Required';
+    if(!form.target)e.target='Required';
+    if(!form.weightage)e.weightage='Required';
+    else if(Number(form.weightage)<10)e.weightage='Min 10%';
+    else{
+      const curTotal=goals.reduce((s,g)=>s+Number(g.weightage),0);
+      if(curTotal+Number(form.weightage)>100)e.weightage=`Exceeds 100% (${100-curTotal}% left)`;
+    }
+    if(goals.length>=8)e.title='Max 8 goals reached';
+    return e;
+  }
+
+  function submit(){
+    const e=validate();
+    if(Object.keys(e).length){setErrors(e);return;}
+    update(st=>{
+      st.goals.push({id:'g'+Date.now(),empId:user.id,managerId:user.managerId||'mgr1',...form,target:form.uom==='timeline'?form.target:Number(form.target),weightage:Number(form.weightage),status:'draft',actuals:[],sharedFrom:null});
+      addAudit(st,`Goal "${form.title}" created`,user.id);
+    });
+    onClose();
+  }
+
+  return(
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-header"><h2>Add New Goal</h2><button className="close-btn" onClick={onClose}>×</button></div>
+        <div className="form-group"><label>Goal Title *</label><input type="text" value={form.title} onChange={e=>setForm({...form,title:e.target.value})} placeholder="e.g. Achieve Sales Revenue Target"/>{errors.title&&<div className="error">{errors.title}</div>}</div>
+        <div className="form-group"><label>Thrust Area *</label><select value={form.thrustArea} onChange={e=>setForm({...form,thrustArea:e.target.value})}>{THRUST_AREAS.map(a=><option key={a}>{a}</option>)}</select></div>
+        <div className="form-group"><label>Unit of Measurement (UoM) *</label>
+          <select value={form.uom} onChange={e=>setForm({...form,uom:e.target.value,target:''})}>
+            <option value="min">Numeric — Higher is Better (e.g. Revenue)</option>
+            <option value="max">Numeric — Lower is Better (e.g. TAT, Cost)</option>
+            <option value="timeline">Timeline (Date-based)</option>
+            <option value="zero">Zero-based (e.g. Safety Incidents)</option>
+          </select>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+          <div className="form-group"><label>Target *</label>
+            {form.uom==='timeline'?<input type="date" value={form.target} onChange={e=>setForm({...form,target:e.target.value})}/>:<input type="number" value={form.target} onChange={e=>setForm({...form,target:e.target.value})} placeholder={form.uom==='zero'?'0':'e.g. 5000000'}/>}
+            {errors.target&&<div className="error">{errors.target}</div>}
+          </div>
+          <div className="form-group"><label>Weightage % *</label><input type="number" value={form.weightage} onChange={e=>setForm({...form,weightage:e.target.value})} placeholder="Min 10%"/>{errors.weightage&&<div className="error">{errors.weightage}</div>}</div>
+        </div>
+        <div className="form-group"><label>Description</label><textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} rows={2} placeholder="Describe this goal..."/></div>
+        <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={submit}>Add Goal</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function EditGoalModal({goal,user,update,addAudit,onClose,state}){
+  const [form,setForm]=useState({title:goal.title,thrustArea:goal.thrustArea,uom:goal.uom,target:goal.target,weightage:goal.weightage,description:goal.description||''});
+  const [errors,setErrors]=useState({});
+  const otherGoals=state.goals.filter(g=>g.empId===user.id&&g.id!==goal.id&&g.status!=='rejected');
+
+  function validate(){
+    const e={};
+    if(!form.title.trim())e.title='Required';
+    if(!form.target)e.target='Required';
+    if(!form.weightage)e.weightage='Required';
+    else if(Number(form.weightage)<10)e.weightage='Min 10%';
+    else{
+      const curTotal=otherGoals.reduce((s,g)=>s+Number(g.weightage),0);
+      if(curTotal+Number(form.weightage)>100)e.weightage=`Exceeds 100% (${100-curTotal}% left for this goal)`;
+    }
+    return e;
+  }
+
+  function submit(){
+    const e=validate();
+    if(Object.keys(e).length){setErrors(e);return;}
+    update(st=>{
+      st.goals=st.goals.map(g=>g.id===goal.id?{...g,...form,target:form.uom==='timeline'?form.target:Number(form.target),weightage:Number(form.weightage)}:g);
+      addAudit(st,`Goal "${form.title}" edited`,user.id);
+    });
+    onClose();
+  }
+
+  return(
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-header"><h2>Edit Goal</h2><button className="close-btn" onClick={onClose}>×</button></div>
+        <div className="form-group"><label>Goal Title</label><input type="text" value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/>{errors.title&&<div className="error">{errors.title}</div>}</div>
+        <div className="form-group"><label>Thrust Area</label><select value={form.thrustArea} onChange={e=>setForm({...form,thrustArea:e.target.value})}>{THRUST_AREAS.map(a=><option key={a}>{a}</option>)}</select></div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+          <div className="form-group"><label>Target</label>
+            {form.uom==='timeline'?<input type="date" value={form.target} onChange={e=>setForm({...form,target:e.target.value})}/>:<input type="number" value={form.target} onChange={e=>setForm({...form,target:e.target.value})}/>}
+            {errors.target&&<div className="error">{errors.target}</div>}
+          </div>
+          <div className="form-group"><label>Weightage %</label><input type="number" value={form.weightage} onChange={e=>setForm({...form,weightage:e.target.value})}/>{errors.weightage&&<div className="error">{errors.weightage}</div>}</div>
+        </div>
+        <div className="form-group"><label>Description</label><textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} rows={2}/></div>
+        <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={submit}>Save Changes</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Check-in Page ──
+function CheckInPage({state,user,update,addAudit}){
+  const [quarter,setQuarter]=useState('Q1');
+  const goals=state.goals.filter(g=>g.empId===user.id&&g.status==='approved');
+  const existingCI=state.checkIns.find(c=>c.empId===user.id&&c.quarter===quarter);
+  const [actuals,setActuals]=useState({});
+  const [statuses,setStatuses]=useState({});
+  const [comment,setComment]=useState('');
+
+  useEffect(()=>{
+    if(existingCI){
+      setActuals(existingCI.actuals||{});
+      setStatuses(existingCI.statuses||{});
+      setComment(existingCI.comment||'');
+    } else {
+      setActuals({});setStatuses({});setComment('');
+    }
+  },[quarter,existingCI?.id]);
+
+  function saveCI(){
+    if(goals.length===0){alert('No approved goals to check in.');return;}
+    update(st=>{
+      const ci={id:`ci-${user.id}-${quarter}-${Date.now()}`,empId:user.id,quarter,actuals:{...actuals},statuses:{...statuses},comment,savedAt:new Date().toISOString()};
+      st.checkIns=st.checkIns.filter(c=>!(c.empId===user.id&&c.quarter===quarter));
+      st.checkIns.push(ci);
+      addAudit(st,`Check-in ${quarter} saved`,user.id);
+    });
+    alert(`${quarter} check-in saved successfully!`);
+  }
+
+  return(
+    <div>
+      <div style={{display:'flex',gap:8,marginBottom:20}}>
+        {['Q1','Q2','Q3','Q4'].map(q=>(
+          <button key={q} className={`btn ${quarter===q?'btn-primary':'btn-ghost'}`} onClick={()=>setQuarter(q)}>{q} {state.checkIns.find(c=>c.empId===user.id&&c.quarter===q)?'✓':''}</button>
+        ))}
+      </div>
+      {goals.length===0?
+        <div className="card empty"><p>No approved goals yet. Goals must be approved before check-in.</p></div>:
+        <div>
+          <div style={{display:'flex',flexDirection:'column',gap:12,marginBottom:16}}>
+            {goals.map(g=>{
+              const score=computeScore(g,actuals[g.id]);
+              return(
+                <div key={g.id} className="card">
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}>
+                    <div>
+                      <h3>{g.title}</h3>
+                      <div style={{fontSize:12,color:'var(--text-2)'}}>{g.thrustArea} · {g.weightage}% weightage · Target: <strong>{g.uom==='timeline'?g.target:Number(g.target).toLocaleString()}</strong></div>
+                    </div>
+                    {score!==null&&<div style={{textAlign:'right'}}>
+                      <div style={{fontSize:20,fontWeight:600,color:score>=80?'var(--success)':score>=50?'var(--warn)':'var(--danger)'}}>{score}%</div>
+                      <div style={{fontSize:11,color:'var(--text-3)'}}>progress score</div>
+                    </div>}
+                  </div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+                    <div className="form-group" style={{margin:0}}>
+                      <label>Actual Achievement</label>
+                      {g.uom==='timeline'?
+                        <input type="date" value={actuals[g.id]||''} onChange={e=>setActuals({...actuals,[g.id]:e.target.value})}/>:
+                        <input type="number" value={actuals[g.id]||''} onChange={e=>setActuals({...actuals,[g.id]:e.target.value})} placeholder="Enter actual value"/>
+                      }
+                    </div>
+                    <div className="form-group" style={{margin:0}}>
+                      <label>Status</label>
+                      <select value={statuses[g.id]||'notstarted'} onChange={e=>setStatuses({...statuses,[g.id]:e.target.value})}>
+                        <option value="notstarted">Not Started</option>
+                        <option value="ontrack">On Track</option>
+                        <option value="completed">Completed</option>
+                      </select>
+                    </div>
+                  </div>
+                  {score!==null&&<div className="progress-bar" style={{marginTop:10}}><div className="progress-fill" style={{width:`${score}%`,background:score>=80?'var(--success)':score>=50?'var(--warn)':'var(--danger)'}}/></div>}
+                </div>
+              );
+            })}
+          </div>
+          <div className="form-group"><label>Self-comment for {quarter}</label><textarea value={comment} onChange={e=>setComment(e.target.value)} rows={3} placeholder="Add notes about your progress this quarter..."/></div>
+          <button className="btn btn-primary" onClick={saveCI}>Save {quarter} Check-in</button>
+          {existingCI&&<span style={{marginLeft:12,fontSize:12,color:'var(--success)'}}>✓ Last saved: {new Date(existingCI.savedAt).toLocaleDateString()}</span>}
+        </div>
+      }
+    </div>
+  );
+}
+
+// ── Team Page ──
+function TeamPage({state,user,update,addAudit}){
+  const [tab,setTab]=useState('pending');
+  const [shareModal,setShareModal]=useState(false);
+  const myTeam=state.users.filter(u=>u.managerId===user.id);
+  const teamGoals=state.goals.filter(g=>{const e=state.users.find(u=>u.id===g.empId);return e&&(e.managerId===user.id||(user.role==='admin'));});
+  const filtered=tab==='all'?teamGoals:teamGoals.filter(g=>g.status===tab);
+
+  function approve(goalId){
+    update(st=>{
+      st.goals=st.goals.map(g=>g.id===goalId?{...g,status:'approved'}:g);
+      addAudit(st,`Goal approved by ${user.name}`,user.id);
+    });
+  }
+  function reject(goalId){
+    const reason=prompt('Reason for rejection (optional):');
+    update(st=>{
+      st.goals=st.goals.map(g=>g.id===goalId?{...g,status:'rejected',rejectReason:reason||''}:g);
+      addAudit(st,`Goal rejected by ${user.name}`,user.id);
+    });
+  }
+  function unlock(goalId){
+    update(st=>{
+      st.goals=st.goals.map(g=>g.id===goalId?{...g,status:'draft'}:g);
+      addAudit(st,`Goal unlocked by ${user.name}`,user.id);
+    });
+  }
+
+  return(
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+        <div style={{display:'flex',gap:6}}>
+          {['pending','approved','rejected','all'].map(t=>(
+            <button key={t} className={`btn btn-sm ${tab===t?'btn-primary':'btn-ghost'}`} onClick={()=>setTab(t)}>
+              {t.charAt(0).toUpperCase()+t.slice(1)} {t==='pending'?`(${teamGoals.filter(g=>g.status==='pending').length})`:t==='all'?`(${teamGoals.length})`:''}
+            </button>
+          ))}
+        </div>
+        <button className="btn btn-primary btn-sm" onClick={()=>setShareModal(true)}>Push Shared Goal</button>
+      </div>
+
+      {filtered.length===0?<div className="card empty"><p>No goals in this category.</p></div>:
+      filtered.map(g=>{
+        const emp=state.users.find(u=>u.id===g.empId);
+        return(
+          <div key={g.id} className="card" style={{marginBottom:10}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
+              <div style={{flex:1}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                  <h3>{g.title}</h3><StatusBadge status={g.status}/>
+                  {g.sharedFrom&&<span className="tag">Shared</span>}
+                </div>
+                <div style={{fontSize:12,color:'var(--text-2)'}}>
+                  {emp?.name} · {g.thrustArea} · {g.weightage}% · Target: {g.uom==='timeline'?g.target:Number(g.target).toLocaleString()}
+                </div>
+                {g.rejectReason&&<div style={{fontSize:12,color:'var(--danger)',marginTop:4}}>Rejection: {g.rejectReason}</div>}
+              </div>
+              <div style={{display:'flex',gap:6,flexShrink:0,marginLeft:12}}>
+                {g.status==='pending'&&<>
+                  <button className="btn btn-success btn-sm" onClick={()=>approve(g.id)}>Approve</button>
+                  <button className="btn btn-danger btn-sm" onClick={()=>reject(g.id)}>Reject</button>
+                </>}
+                {g.status==='approved'&&user.role==='admin'&&<button className="btn btn-ghost btn-sm" onClick={()=>unlock(g.id)}>Unlock</button>}
+              </div>
+            </div>
+            {g.status==='approved'&&(()=>{
+              const ci=state.checkIns.find(c=>c.empId===g.empId);
+              const actual=ci?.actuals?.[g.id];
+              const score=computeScore(g,actual);
+              return actual!==undefined&&actual!==''?<div style={{marginTop:10}}>
+                <div style={{fontSize:12,color:'var(--text-2)',marginBottom:4}}>Latest actual: <strong>{actual}</strong> &nbsp; Progress score: <strong style={{color:score>=80?'var(--success)':score>=50?'var(--warn)':'var(--danger)'}}>{score}%</strong></div>
+                <div className="progress-bar"><div className="progress-fill" style={{width:`${score||0}%`,background:score>=80?'var(--success)':score>=50?'var(--warn)':'var(--danger)'}}/></div>
+              </div>:null;
+            })()}
+          </div>
+        );
+      })}
+      {shareModal&&<ShareGoalModal state={state} user={user} update={update} addAudit={addAudit} onClose={()=>setShareModal(false)}/>}
+    </div>
+  );
+}
+
+function ShareGoalModal({state,user,update,addAudit,onClose}){
+  const myTeam=state.users.filter(u=>u.managerId===user.id||(user.role==='admin'));
+  const [form,setForm]=useState({title:'',thrustArea:THRUST_AREAS[0],uom:'min',target:'',description:''});
+  const [selected,setSelected]=useState([]);
+  const [weightages,setWeightages]=useState({});
+  const [errors,setErrors]=useState({});
+
+  function toggle(uid){
+    setSelected(prev=>prev.includes(uid)?prev.filter(x=>x!==uid):[...prev,uid]);
+  }
+
+  function submit(){
+    const e={};
+    if(!form.title.trim())e.title='Required';
+    if(!form.target)e.target='Required';
+    if(selected.length===0)e.sel='Select at least one employee';
+    selected.forEach(uid=>{if(!weightages[uid]||Number(weightages[uid])<10)e[uid]='Min 10%';});
+    if(Object.keys(e).length){setErrors(e);return;}
+    const sharedId='g'+Date.now();
+    update(st=>{
+      selected.forEach((uid,i)=>{
+        st.goals.push({
+          id:`g${Date.now()}${i}`,empId:uid,managerId:user.id,...form,
+          target:form.uom==='timeline'?form.target:Number(form.target),
+          weightage:Number(weightages[uid]||20),status:'approved',
+          actuals:[],sharedFrom:sharedId,description:form.description
+        });
+      });
+      addAudit(st,`Shared goal "${form.title}" pushed to ${selected.length} employees`,user.id);
+    });
+    alert('Shared goal pushed successfully!');
+    onClose();
+  }
+
+  return(
+    <div className="modal-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <div className="modal-header"><h2>Push Shared Goal</h2><button className="close-btn" onClick={onClose}>×</button></div>
+        <div className="form-group"><label>Goal Title *</label><input type="text" value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/>{errors.title&&<div className="error">{errors.title}</div>}</div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+          <div className="form-group"><label>Thrust Area</label><select value={form.thrustArea} onChange={e=>setForm({...form,thrustArea:e.target.value})}>{THRUST_AREAS.map(a=><option key={a}>{a}</option>)}</select></div>
+          <div className="form-group"><label>UoM</label><select value={form.uom} onChange={e=>setForm({...form,uom:e.target.value})}>
+            <option value="min">Numeric (Higher=Better)</option><option value="max">Numeric (Lower=Better)</option>
+            <option value="timeline">Timeline</option><option value="zero">Zero-based</option>
+          </select></div>
+        </div>
+        <div className="form-group"><label>Target *</label>{form.uom==='timeline'?<input type="date" value={form.target} onChange={e=>setForm({...form,target:e.target.value})}/>:<input type="number" value={form.target} onChange={e=>setForm({...form,target:e.target.value})} placeholder="Target value"/>}{errors.target&&<div className="error">{errors.target}</div>}</div>
+        <div className="form-group"><label>Description</label><textarea value={form.description} onChange={e=>setForm({...form,description:e.target.value})} rows={2}/></div>
+        <div className="form-group">
+          <label>Push to employees *</label>{errors.sel&&<div className="error">{errors.sel}</div>}
+          {myTeam.filter(u=>u.role==='employee').map(u=>(
+            <div key={u.id} style={{display:'flex',alignItems:'center',gap:10,padding:'6px 0',borderBottom:'1px solid var(--border)'}}>
+              <input type="checkbox" checked={selected.includes(u.id)} onChange={()=>toggle(u.id)}/>
+              <span style={{flex:1,fontSize:13}}>{u.name}</span>
+              {selected.includes(u.id)&&<div style={{width:80}}>
+                <input type="number" placeholder="Weight%" value={weightages[u.id]||''} onChange={e=>setWeightages({...weightages,[u.id]:e.target.value})}/>
+                {errors[u.id]&&<div className="error">{errors[u.id]}</div>}
+              </div>}
+            </div>
+          ))}
+        </div>
+        <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={submit}>Push Goal</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Admin Page ──
+function AdminPage({state,user,update,addAudit}){
+  const [tab,setTab]=useState('overview');
+  function unlockGoal(id){
+    update(st=>{st.goals=st.goals.map(g=>g.id===id?{...g,status:'draft'}:g);addAudit(st,'Goal unlocked by admin',user.id);});
+  }
+  const byDept=state.users.filter(u=>u.role==='employee').reduce((acc,u)=>{
+    const dept=u.dept||'Other';
+    if(!acc[dept])acc[dept]=[];
+    const empGoals=state.goals.filter(g=>g.empId===u.id);
+    acc[dept].push({user:u,goals:empGoals});
+    return acc;
+  },{});
+
+  return(
+    <div>
+      <div style={{display:'flex',gap:6,marginBottom:16}}>
+        {['overview','users','goals'].map(t=><button key={t} className={`btn btn-sm ${tab===t?'btn-primary':'btn-ghost'}`} onClick={()=>setTab(t)}>{t.charAt(0).toUpperCase()+t.slice(1)}</button>)}
+      </div>
+      {tab==='overview'&&(
+        <div>
+          <div className="stat-grid">
+            <div className="stat-card"><div className="stat-val">{state.users.filter(u=>u.role==='employee').length}</div><div className="stat-label">Employees</div></div>
+            <div className="stat-card"><div className="stat-val">{state.goals.length}</div><div className="stat-label">Total Goals</div></div>
+            <div className="stat-card"><div className="stat-val">{state.goals.filter(g=>g.status==='approved').length}</div><div className="stat-label">Approved Goals</div></div>
+            <div className="stat-card"><div className="stat-val">{state.goals.filter(g=>g.status==='pending').length}</div><div className="stat-label">Pending Approval</div></div>
+            <div className="stat-card"><div className="stat-val">{state.checkIns.length}</div><div className="stat-label">Check-ins Done</div></div>
+          </div>
+          <div className="card"><h3 style={{marginBottom:12}}>Department Overview</h3>
+            {Object.entries(byDept).map(([dept,data])=>(
+              <div key={dept} style={{marginBottom:16}}>
+                <div style={{fontWeight:500,marginBottom:6,color:'var(--brand)'}}>{dept}</div>
+                {data.map(({user:u,goals})=>(
+                  <div key={u.id} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid var(--border)',fontSize:13}}>
+                    <span>{u.name}</span>
+                    <span style={{color:'var(--text-2)'}}>{goals.length} goals · {goals.filter(g=>g.status==='approved').length} approved</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {tab==='users'&&(
+        <div className="card"><table>
+          <thead><tr><th>Name</th><th>Role</th><th>Dept</th><th>Manager</th><th>Goals</th></tr></thead>
+          <tbody>{state.users.map(u=>{
+            const mgr=state.users.find(m=>m.id===u.managerId);
+            return<tr key={u.id}><td style={{fontWeight:500}}>{u.name}</td><td><StatusBadge status={u.role} type="role"/></td><td>{u.dept}</td><td>{mgr?.name||'—'}</td><td>{state.goals.filter(g=>g.empId===u.id).length}</td></tr>;
+          })}</tbody>
+        </table></div>
+      )}
+      {tab==='goals'&&(
+        <div className="card"><table>
+          <thead><tr><th>Employee</th><th>Goal</th><th>Status</th><th>Weight</th><th>Action</th></tr></thead>
+          <tbody>{state.goals.map(g=>{
+            const emp=state.users.find(u=>u.id===g.empId);
+            return<tr key={g.id}>
+              <td>{emp?.name}</td><td style={{maxWidth:200}}><div style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{g.title}</div></td>
+              <td><StatusBadge status={g.status}/></td><td>{g.weightage}%</td>
+              <td>{g.status==='approved'&&<button className="btn btn-ghost btn-sm" onClick={()=>unlockGoal(g.id)}>Unlock</button>}</td>
+            </tr>;
+          })}</tbody>
+        </table></div>
+      )}
+    </div>
+  );
+}
+
+// ── Reports Page ──
+function ReportsPage({state}){
+  function exportCSV(){
+    const rows=[['Employee','Goal','Thrust Area','UoM','Target','Weightage','Status','Q1 Actual','Q2 Actual','Q3 Actual','Q4 Actual','Progress Score']];
+    state.goals.forEach(g=>{
+      const emp=state.users.find(u=>u.id===g.empId);
+      const cis=['Q1','Q2','Q3','Q4'].map(q=>{
+        const ci=state.checkIns.find(c=>c.empId===g.empId&&c.quarter===q);
+        return ci?.actuals?.[g.id]||'';
+      });
+      const lastActual=cis.filter(Boolean).pop();
+      const score=lastActual?computeScore(g,lastActual):'';
+      rows.push([emp?.name||g.empId,g.title,g.thrustArea,g.uom,g.target,g.weightage,g.status,...cis,score]);
+    });
+    const csv=rows.map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+    const blob=new Blob([csv],{type:'text/csv'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='atomquest_report.csv';a.click();
+  }
+
+  const employees=state.users.filter(u=>u.role==='employee');
+  return(
+    <div>
+      <div style={{display:'flex',justifyContent:'flex-end',marginBottom:16}}>
+        <button className="btn btn-primary" onClick={exportCSV}>⬇ Export CSV</button>
+      </div>
+      <div className="card" style={{marginBottom:16}}>
+        <h3 style={{marginBottom:14}}>Employee Achievement Summary</h3>
+        <table>
+          <thead><tr><th>Employee</th><th>Total Goals</th><th>Approved</th><th>Check-ins</th><th>Avg Progress</th></tr></thead>
+          <tbody>{employees.map(emp=>{
+            const goals=state.goals.filter(g=>g.empId===emp.id&&g.status==='approved');
+            const cis=state.checkIns.filter(c=>c.empId===emp.id);
+            const scores=goals.flatMap(g=>{
+              const ci=cis[cis.length-1];
+              const actual=ci?.actuals?.[g.id];
+              const sc=computeScore(g,actual);
+              return sc!==null?[sc]:[];
+            });
+            const avg=scores.length?Math.round(scores.reduce((a,b)=>a+b,0)/scores.length):null;
+            return<tr key={emp.id}>
+              <td style={{fontWeight:500}}>{emp.name}</td>
+              <td>{state.goals.filter(g=>g.empId===emp.id).length}</td>
+              <td>{goals.length}</td>
+              <td>{cis.length}/4</td>
+              <td>{avg!==null?<span style={{fontWeight:500,color:avg>=80?'var(--success)':avg>=50?'var(--warn)':'var(--danger)'}}>{avg}%</span>:'—'}</td>
+            </tr>;
+          })}</tbody>
+        </table>
+      </div>
+      <div className="card">
+        <h3 style={{marginBottom:14}}>Check-in Completion Dashboard</h3>
+        <table>
+          <thead><tr><th>Employee</th>{['Q1','Q2','Q3','Q4'].map(q=><th key={q}>{q}</th>)}</tr></thead>
+          <tbody>{employees.map(emp=>(
+            <tr key={emp.id}><td style={{fontWeight:500}}>{emp.name}</td>
+              {['Q1','Q2','Q3','Q4'].map(q=>{
+                const done=state.checkIns.some(c=>c.empId===emp.id&&c.quarter===q);
+                return<td key={q}>{done?<span className="badge badge-approved">Done</span>:<span className="badge badge-draft">—</span>}</td>;
+              })}
+            </tr>
+          ))}</tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Audit Log ──
+function AuditPage({state}){
+  return(
+    <div className="card">
+      <h3 style={{marginBottom:14}}>Audit Trail</h3>
+      {(!state.auditLog||state.auditLog.length===0)?<div className="empty"><p>No audit events yet.</p></div>:
+      state.auditLog.map((log,i)=>{
+        const u=state.users.find(x=>x.id===log.userId);
+        return<div key={i} style={{display:'flex',gap:12,padding:'8px 0',borderBottom:'1px solid var(--border)',fontSize:13}}>
+          <div style={{width:130,color:'var(--text-3)',fontSize:11,flexShrink:0}}>{new Date(log.ts).toLocaleString()}</div>
+          <div style={{flex:1}}>{log.msg}</div>
+          <div style={{color:'var(--text-2)',fontSize:12,flexShrink:0}}>{u?.name||log.userId}</div>
+        </div>;
+      })}
+    </div>
+  );
+}
+
+function ModalWrapper({modal,setModal,state,update,user,addAudit}){return null;}
+
+function StatusBadge({status,type}){
+  if(type==='role'){
+    const colors={employee:'badge-draft',manager:'badge-approved',admin:'badge-pending'};
+    return<span className={`badge ${colors[status]||'badge-draft'}`}>{status}</span>;
+  }
+  const map={approved:'badge-approved',pending:'badge-pending',draft:'badge-draft',rejected:'badge-rejected',ontrack:'badge-ontrack',notstarted:'badge-notstarted',completed:'badge-completed'};
+  return<span className={`badge ${map[status]||'badge-draft'}`}>{status}</span>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
