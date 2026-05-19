@@ -50,5 +50,5 @@ It supports Employees, Managers, and Admins with features such as:
 ---
 
 # Project Architecture
-
+architecture.drawio.png
 
